@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Табель учета рабочего времени</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+
+<div class="container">
+    <h2>ТАБЕЛЬ РАБОЧЕГО ВРЕМЕНИ</h2>
+    
+    <section class="card">
+        <label for="shiftDate">Дата смены</label>
+        <input type="date" id="shiftDate">
+
+        <label for="empSelect">Сотрудник</label>
+        <select id="empSelect">
+            <option value="">-- Выберите из списка --</option>
+        </select>
+
+        <div class="time-group">
+            <div>
+                <label for="arrTime">Время прихода</label>
+                <input type="time" id="arrTime">
+            </div>
+            <div>
+                <label for="depTime">Время ухода</label>
+                <input type="time" id="depTime">
+            </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="addRecord()">➕ Добавить смену в табель</button>
+    </section>
+
+    <section class="card">
+        <label>Внесенные смены в этом месяце:</label>
+        <div class="preview-area" id="previewArea">Записей пока нет...</div>
+        <button class="btn btn-success" onclick="exportToExcel()">📊 СКАЧАТЬ ТАБЕЛЬ (XLSX)</button>
+    </section>
+
+    <section class="card section-db">
+        <h3>⚙️ Управление базой сотрудников</h3>
+        
+        <label for="newEmpName">Имя и Фамилия сотрудника:</label>
+        <input type="text" id="newEmpName" placeholder="Например: Иван Иванов">
+        
+        <div class="radio-group">
+            <label><input type="radio" name="newEmpDept" value="кухня" checked> Кухня</label>
+            <label><input type="radio" name="newEmpDept" value="бар"> Бар</label>
+        </div>
+        
+        <button class="btn btn-secondary" onclick="addEmployee()">💾 Сохранить сотрудника</button>
+
+        <label style="margin-top: 15px;">Сейчас в базе данных:</label>
+        <div class="emp-list" id="empList"></div>
+    </section>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
