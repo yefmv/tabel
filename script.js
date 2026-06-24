@@ -3,8 +3,10 @@
 // ==========================================
 
 let records = JSON.parse(localStorage.getItem('gh_records_v2')) || [];
+
+// Теперь этот обновленный список сотрудников навсегда вшит в код по умолчанию
 let employees = JSON.parse(localStorage.getItem('gh_employees_v2')) || [
-    { name: 'Абдуначирова Наргиза', dept: 'кухня' },
+    { name: 'Абдунасирова Наргиза', dept: 'кухня' },
     { name: 'Абдурахманов Сардор', dept: 'кухня' },
     { name: 'Мамасалиева Мая', dept: 'кухня' },
     { name: 'Янгибоев Джонни', dept: 'бар' },
@@ -12,7 +14,7 @@ let employees = JSON.parse(localStorage.getItem('gh_employees_v2')) || [
     { name: 'Калюжная Карина', dept: 'бар' },
     { name: 'Ефимов Стас', dept: 'бар' },
     { name: 'Фолингер Артем', dept: 'бар' },
-    { name: 'Зимина Ада', dept: 'бар' }
+    { name: 'Зимина Ада', dept: 'бар' }, // Исправлена пропущенная запятая здесь
     { name: 'Рем Маша', dept: 'бар' }
 ];
 
@@ -22,11 +24,6 @@ let editingId = null;
 document.getElementById('shiftDate').valueAsDate = new Date();
 refreshAll();
 
-function refreshAll() {
-    updateEmployeeSelect();
-    renderEmployeeList();
-    updatePreview();
-}
 
 // ==========================================
 // БЛОК 2: УПРАВЛЕНИЕ СПИСКОМ СОТРУДНИКОВ
