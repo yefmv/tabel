@@ -4,16 +4,16 @@
 
 let records = JSON.parse(localStorage.getItem('gh_records_v2')) || [];
 let employees = JSON.parse(localStorage.getItem('gh_employees_v2')) || [
-    { name: 'Наргиза', dept: 'кухня' },
-    { name: 'Мавлуда', dept: 'кухня' },
-    { name: 'Сардор', dept: 'кухня' },
-    { name: 'Мая', dept: 'кухня' },
-    { name: 'Даниэл', dept: 'бар' },
-    { name: 'Азиз', dept: 'бар' },
-    { name: 'Карина', dept: 'бар' },
-    { name: 'Стас', dept: 'бар' },
-    { name: 'Артем', dept: 'бар' },
-    { name: 'Таня В', dept: 'бар' }
+    { name: 'Абдуначирова Наргиза', dept: 'кухня' },
+    { name: 'Абдурахманов Сардор', dept: 'кухня' },
+    { name: 'Мамасалиева Мая', dept: 'кухня' },
+    { name: 'Янгибоев Джонни', dept: 'бар' },
+    { name: 'Ведерникова Тоня', dept: 'бар' },
+    { name: 'Калюжная Карина', dept: 'бар' },
+    { name: 'Ефимов Стас', dept: 'бар' },
+    { name: 'Фолингер Артем', dept: 'бар' },
+    { name: 'Зимина Ада', dept: 'бар' }
+    { name: 'Рем Маша', dept: 'бар' }
 ];
 
 // ID редактируемой записи (null, если создаем новую)
