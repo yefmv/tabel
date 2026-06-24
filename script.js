@@ -4,9 +4,9 @@
 
 let records = JSON.parse(localStorage.getItem('gh_records_v2')) || [];
 
-// Теперь этот обновленный список сотрудников навсегда вшит в код по умолчанию
+// Обновленный список сотрудников по умолчанию
 let employees = JSON.parse(localStorage.getItem('gh_employees_v2')) || [
-    { name: 'Абдунасирова Наргиза', dept: 'кухня' },
+    { name: 'Абдуначирова Наргиза', dept: 'кухня' },
     { name: 'Абдурахманов Сардор', dept: 'кухня' },
     { name: 'Мамасалиева Мая', dept: 'кухня' },
     { name: 'Янгибоев Джонни', dept: 'бар' },
@@ -14,16 +14,26 @@ let employees = JSON.parse(localStorage.getItem('gh_employees_v2')) || [
     { name: 'Калюжная Карина', dept: 'бар' },
     { name: 'Ефимов Стас', dept: 'бар' },
     { name: 'Фолингер Артем', dept: 'бар' },
-    { name: 'Зимина Ада', dept: 'бар' }, // Исправлена пропущенная запятая здесь
+    { name: 'Зимина Ада', dept: 'бар' },
     { name: 'Рем Маша', dept: 'бар' }
 ];
 
 // ID редактируемой записи (null, если создаем новую)
 let editingId = null;
 
-document.getElementById('shiftDate').valueAsDate = new Date();
+// Установка сегодняшней даты по умолчанию при загрузке страницы
+if (document.getElementById('shiftDate')) {
+    document.getElementById('shiftDate').valueAsDate = new Date();
+}
+
 refreshAll();
 
+// Полное обновление интерфейса
+function refreshAll() {
+    updateEmployeeSelect();
+    renderEmployeeList();
+    updatePreview();
+}
 
 // ==========================================
 // БЛОК 2: УПРАВЛЕНИЕ СПИСКОМ СОТРУДНИКОВ
@@ -115,18 +125,20 @@ function addRecord() {
     let arrMinutes = arrH * 60 + arrM;
     let depMinutes = depH * 60 + depM;
 
+    // Расчет ночных смен (переход через полночь)
     if (depMinutes < arrMinutes) { depMinutes += 24 * 60; }
     
+    // Чистая разница в часах
     let rawHours = (depMinutes - arrMinutes) / 60;
     
-    // ОКРУГЛЕНИЕ ПО ПОЛЧАСА В МЕНЬШУЮ СТОРОНУ
+    // ЛОГИКА ОКРУГЛЕНИЯ: По полчаса строго в меньшую сторону
     let totalHours = Math.floor(rawHours * 2) / 2;
 
     const empData = employees.find(e => e.name === name);
     const dept = empData ? empData.dept : 'кухня';
 
     if (editingId !== null) {
-        // РЕЖИМ РЕДАКТИРОВАНИЯ: Находим старую запись и обновляем её поля
+        // Режим редактирования
         const recordIndex = records.findIndex(r => r.id === editingId);
         if (recordIndex > -1) {
             records[recordIndex].year = year;
@@ -139,9 +151,9 @@ function addRecord() {
             records[recordIndex].arrival = arrival;
             records[recordIndex].departure = departure;
         }
-        cancelEdit(); // Сбрасываем флаги и восстанавливаем интерфейс кнопки
+        cancelEdit();
     } else {
-        // ОБЫЧНЫЙ РЕЖИМ: Создаем новую смену
+        // Обычное добавление новой смены
         records.push({
             id: Date.now(),
             year, month, day,
@@ -157,17 +169,14 @@ function addRecord() {
     document.getElementById('depTime').value = '';
 }
 
-// Запуск процесса изменения смены
 function startEdit(id) {
     const record = records.find(r => r.id === id);
     if (!record) return;
 
     editingId = id;
 
-    // Переводим дату из DD.MM.YYYY обратно в YYYY-MM-DD для инпута
     const parts = record.dateStr.split('.');
     if (parts.length === 3) {
-        // Если сохранен год, используем его, иначе текущий сохраненный в объекте
         const y = record.year || parts[2];
         document.getElementById('shiftDate').value = `${y}-${parts[1]}-${parts[0]}`;
     }
@@ -176,23 +185,25 @@ function startEdit(id) {
     document.getElementById('arrTime').value = record.arrival;
     document.getElementById('depTime').value = record.departure;
 
-    // Визуальное изменение заголовков и кнопок формы
     document.getElementById('formTitle').textContent = "Редактировать смену";
     document.getElementById('submitBtn').textContent = "Обновить смену";
     document.getElementById('submitBtn').className = "btn-success";
-    document.getElementById('cancelEditBtn').style.display = "block";
     
-    // Плавный скролл наверх к форме
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.style.display = "block";
+    
     window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// Отмена редактирования
 function cancelEdit() {
     editingId = null;
     document.getElementById('formTitle').textContent = "Добавить смену";
     document.getElementById('submitBtn').textContent = "Сохранить смену";
     document.getElementById('submitBtn').className = "btn-primary";
-    document.getElementById('cancelEditBtn').style.display = "none";
+    
+    const cancelBtn = document.getElementById('cancelEditBtn');
+    if (cancelBtn) cancelBtn.style.display = "none";
+    
     document.getElementById('shiftDate').valueAsDate = new Date();
     document.getElementById('empSelect').value = "";
     document.getElementById('arrTime').value = "";
