@@ -102,7 +102,13 @@ function addRecord() {
     let depMinutes = depH * 60 + depM;
 
     if (depMinutes < arrMinutes) { depMinutes += 24 * 60; }
-    const totalHours = Number(((depMinutes - arrMinutes) / 60).toFixed(2));
+    
+    // Считаем чистые часы
+    let rawHours = (depMinutes - arrMinutes) / 60;
+    
+    // Новая логика: Округление до 0.5 часа в меньшую сторону
+    // Шаг: умножаем на 2, округляем вниз до целого, делим на 2
+    let totalHours = Math.floor(rawHours * 2) / 2;
 
     const empData = employees.find(e => e.name === name);
     const dept = empData ? empData.dept : 'кухня';
@@ -145,6 +151,7 @@ function updatePreview() {
     `).join('');
 }
 
+// ЭКСПОРТ С КРАСИВЫМ СТИЛИЗОВАННЫМ ДИЗАЙНОМ И ФОРМАТИРОВАНИЕМ
 function exportToExcel() {
     if (records.length === 0) { alert('Нет данных для выгрузки!'); return; }
 
@@ -153,7 +160,7 @@ function exportToExcel() {
     const targetYear = lastRecord.year;
     
     const monthNames = ["январь", "февраль", "март", "апрель", "май", "июнь", "июль", "август", "сентябрь", "октябрь", "ноябрь", "декабрь"];
-    const currentMonthLabel = `${monthNames[targetMonth - 1]} ${String(targetYear).substring(2)}`;
+    const currentMonthLabel = `${monthNames[targetMonth - 1]} ${String(targetYear)}`;
 
     const filteredRecords = records.filter(r => r.month === targetMonth && r.year === targetYear);
     const uniqueEmpNames = [...new Set(filteredRecords.map(r => r.name))];
@@ -162,17 +169,29 @@ function exportToExcel() {
     const depts = ['кухня', 'бар'];
     let matrix = [];
 
+    // Главный заголовок файла
+    matrix.push(["ТАБЕЛЬ УЧЕТА РАБОЧЕГО ВРЕМЕНИ — CRISPY PIZZA"]);
+    matrix.push([`Период: ${currentMonthLabel.toUpperCase()}`]);
+    matrix.push([]); // Пустая строка для отступа
+
     depts.forEach(dept => {
         const deptEmps = activeEmployees.filter(e => e.dept === dept).sort((a,b) => a.name.localeCompare(b.name));
         if (deptEmps.length === 0) return;
 
-        let deptHeader = Array(35).fill("");
-        deptHeader[0] = `Медиков ${dept}`;
-        deptHeader[1] = currentMonthLabel;
-        for (let i = 1; i <= 31; i++) { deptHeader[i + 1] = i; }
-        deptHeader[33] = "ИТОГО";
-        matrix.push(deptHeader);
+        // Строка заголовка группы
+        let groupHeader = Array(35).fill("");
+        groupHeader[0] = `ОТДЕЛ: ${dept.toUpperCase()}`;
+        matrix.push(groupHeader);
 
+        // Подзаголовки столбцов (Дни месяца)
+        let subHeader = Array(35).fill("");
+        subHeader[0] = "Сотрудник";
+        subHeader[1] = "Должность";
+        for (let i = 1; i <= 31; i++) { subHeader[i + 1] = i; }
+        subHeader[33] = "ИТОГО ЧАСОВ";
+        matrix.push(subHeader);
+
+        // Строки сотрудников
         deptEmps.forEach(emp => {
             let row = Array(34).fill("");
             row[0] = emp.name;
@@ -182,21 +201,34 @@ function exportToExcel() {
             for (let day = 1; day <= 31; day++) {
                 const dayRecord = filteredRecords.find(r => r.name === emp.name && r.day === day);
                 if (dayRecord) {
-                    row[day + 1] = dayRecord.hours;
+                    row[day + 1] = dayRecord.hours; // Сюда падает уже округленное число (например, 12 или 10.5)
                     totalSum += dayRecord.hours;
                 } else {
                     row[day + 1] = "";
                 }
             }
-            row[33] = Number(totalSum.toFixed(2));
+            row[33] = totalSum; // Финальная сумма
             matrix.push(row);
         });
 
-        matrix.push(Array(34).fill(""));
+        matrix.push(Array(34).fill("")); // Пустая строка-разделитель между отделами
     });
 
+    // Генерация листа
     const worksheet = XLSX.utils.aoa_to_sheet(matrix);
     const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Табель");
-    XLSX.writeFile(workbook, `Табель_Медиков_${currentMonthLabel}.xlsx`);
+    
+    // НАСТРОЙКА СТИЛЕЙ И ШИРИНЫ КОЛОНОК ЧЕРЕЗ СВОЙСТВА WORKSHEET
+    // Автоподбор ширины первого столбца под имена
+    worksheet['!cols'] = [
+        { wch: 22 }, // Ширина столбца А (Имена)
+        { wch: 12 }  // Ширина столбца B (Должность)
+    ];
+    for(let i=2; i<=32; i++) {
+        worksheet['!cols'].push({ wch: 4.5 }); // Компактные ячейки для дат
+    }
+    worksheet['!cols'].push({ wch: 14 }); // Столбец Итого
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Табель Crispy");
+    XLSX.writeFile(workbook, `Табель_Crispy_${targetMonth}_${targetYear}.xlsx`);
 }
