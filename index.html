@@ -7,77 +7,61 @@
     <link rel="stylesheet" href="style.css">
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 </head>
-    
 <body>
-
-<div class="app-container">
-    <header class="app-header">
-        <h1>🍕 CRISPY PIZZA</h1>
-        <p>Учет рабочего времени & Табель</p>
-    </header>
-    
-    <main class="card card-accent">
-        <h2 class="card-title">➕ Внести новую смену</h2>
+    <div class="container">
+        <h1>Табель учета времени — CRISPY PIZZA</h1>
         
-        <div class="input-group">
-            <label for="shiftDate">Дата смены</label>
-            <input type="date" id="shiftDate">
-        </div>
-
-        <div class="input-group">
-            <label for="empSelect">Сотрудник</label>
-            <select id="empSelect">
-                <option value="">-- Нажмите для выбора --</option>
-            </select>
-        </div>
-
-        <div class="time-row">
-            <div class="input-group">
-                <label for="arrTime">⏰ Приход</label>
-                <input type="time" id="arrTime">
+        <div class="card">
+            <h2 id="formTitle">Добавить смену</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Дата смены</label>
+                    <input type="date" id="shiftDate">
+                </div>
+                <div class="form-group">
+                    <label>Сотрудник</label>
+                    <select id="empSelect">
+                        <option value="">-- Нажмите для выбора --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Время прихода</label>
+                    <input type="time" id="arrTime">
+                </div>
+                <div class="form-group">
+                    <label>Время ухода</label>
+                    <input type="time" id="depTime">
+                </div>
             </div>
-            <div class="input-group">
-                <label for="depTime">🌙 Уход</label>
-                <input type="time" id="depTime">
+            <div style="display: flex; gap: 10px;">
+                <button class="btn-primary" id="submitBtn" onclick="addRecord()">Сохранить смену</button>
+                <button class="btn-secondary" id="cancelEditBtn" onclick="cancelEdit()" style="display: none; width: 30%;">Отмена</button>
             </div>
         </div>
 
-        <button class="btn btn-gradient" onclick="addRecord()">Записать смену ✨</button>
-    </main>
+        <div class="main-layout">
+            <div class="card">
+                <div class="card-header">
+                    <h2>Текущие записи смен</h2>
+                    <button class="btn-success" onclick="exportToExcel()">Выгрузить в Excel</button>
+                </div>
+                <div id="previewArea" class="preview-area"></div>
+            </div>
 
-    <section class="card">
-        <h2 class="card-title">📋 Смены в этом месяце</h2>
-        <div class="preview-area" id="previewArea">Записей пока нет...</div>
-        <button class="btn btn-success" onclick="exportToExcel()">📊 Скачать XLSX (Шахматка)</button>
-    </section>
-
-    <section class="card card-dark">
-        <h2 class="card-title">⚙️ Управление командой</h2>
-        
-        <div class="input-group">
-            <label for="newEmpName">Имя и Фамилия:</label>
-            <input type="text" id="newEmpName" placeholder="Например: Иван Иванов">
+            <div class="card">
+                <h2>Сотрудники в базе</h2>
+                <div class="add-emp-form">
+                    <input type="text" id="newEmpName" placeholder="Имя нового сотрудника">
+                    <div class="radio-group">
+                        <label><input type="radio" name="newEmpDept" value="кухня" checked> Кухня</label>
+                        <label><input type="radio" name="newEmpDept" value="бар"> Бар</label>
+                    </div>
+                    <button class="btn-secondary" onclick="addEmployee()">Добавить</button>
+                </div>
+                <div id="empList" class="emp-list"></div>
+            </div>
         </div>
-        
-        <label>Выбор отдела:</label>
-        <div class="dept-selector">
-            <label class="dept-btn kitchen">
-                <input type="radio" name="newEmpDept" value="кухня" checked>
-                <span>🔥 Кухня</span>
-            </label>
-            <label class="dept-btn bar">
-                <input type="radio" name="newEmpDept" value="бар">
-                <span>🍹 Бар</span>
-            </label>
-        </div>
-        
-        <button class="btn btn-secondary" onclick="addEmployee()">Добавить в базу 💾</button>
-
-        <h3 class="sub-title">Текущий состав:</h3>
-        <div class="emp-list" id="empList"></div>
-    </section>
-</div>
-
-<script src="script.js"></script>
+    </div>
+    <script src="script.js"></script>
 </body>
 </html>
