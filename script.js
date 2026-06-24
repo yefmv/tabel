@@ -33,6 +33,7 @@ function refreshAll() {
 
 function updateEmployeeSelect() {
     const select = document.getElementById('empSelect');
+    if (!select) return;
     select.innerHTML = '<option value="">-- Нажмите для выбора --</option>';
     const sorted = [...employees].sort((a, b) => a.dept.localeCompare(b.dept) || a.name.localeCompare(b.name));
     
@@ -46,6 +47,7 @@ function updateEmployeeSelect() {
 
 function renderEmployeeList() {
     const listDiv = document.getElementById('empList');
+    if (!listDiv) return;
     if (employees.length === 0) {
         listDiv.innerHTML = '<div style="padding:15px; color:#aaa; text-align:center;">База пуста</div>';
         return;
@@ -66,7 +68,7 @@ function renderEmployeeList() {
 
 function addEmployee() {
     const input = document.getElementById('newEmpName');
-    const name = input.value.trim();
+    const name = input ? input.value.trim() : '';
     const deptRadio = document.querySelector('input[name="newEmpDept"]:checked');
     const dept = deptRadio ? deptRadio.value : 'кухня';
 
@@ -75,7 +77,7 @@ function addEmployee() {
 
     employees.push({ name, dept });
     localStorage.setItem('gh_employees_v2', JSON.stringify(employees));
-    input.value = '';
+    if (input) input.value = '';
     refreshAll();
 }
 
@@ -118,11 +120,10 @@ function addRecord() {
     // Расчет ночных смен (переход через полночь)
     if (depMinutes < arrMinutes) { depMinutes += 24 * 60; }
     
-    // Чистая разница в часах (с минутами в виде десятичной дроби)
+    // Чистая разница в часах
     let rawHours = (depMinutes - arrMinutes) / 60;
     
-    // ЛОГИКА ОКРУГЛЕНИЯ: Только по полчаса в меньшую сторону
-    // Примеры: 12.66 (12ч 40м) -> 12.0 ч. | 11.9 (11ч 54м) -> 11.5 ч.
+    // ЛОГИКА ОКРУГЛЕНИЯ: По полчаса строго в меньшую сторону
     let totalHours = Math.floor(rawHours * 2) / 2;
 
     const empData = employees.find(e => e.name === name);
@@ -138,7 +139,6 @@ function addRecord() {
     localStorage.setItem('gh_records_v2', JSON.stringify(records));
     updatePreview();
 
-    // Сброс полей ввода времени для следующей записи
     document.getElementById('arrTime').value = '';
     document.getElementById('depTime').value = '';
 }
@@ -151,6 +151,7 @@ function deleteRecord(id) {
 
 function updatePreview() {
     const area = document.getElementById('previewArea');
+    if (!area) return;
     if (records.length === 0) {
         area.innerHTML = '<div style="padding:15px; color:#aaa; text-align:center;">Записей пока нет...</div>';
         return;
@@ -186,10 +187,12 @@ function exportToExcel() {
     const activeEmployees = employees.filter(e => uniqueEmpNames.includes(e.name));
 
     const depts = ['кухня', 'бар'];
+    
+    // Создаем книгу Excel (здесь переменная называется wb)
     const wb = XLSX.utils.book_new();
     let matrix = [];
 
-    // 1. Формируем структуру строк (Главная шапка)
+    // Заголовки документа
     matrix.push([`ТАБЕЛЬ УЧЕТА РАБОЧЕГО ВРЕМЕНИ — CRISPY PIZZA (${currentMonthLabel.toUpperCase()})`]);
     matrix.push([]); 
 
@@ -197,12 +200,10 @@ function exportToExcel() {
         const deptEmps = activeEmployees.filter(e => e.dept === dept).sort((a,b) => a.name.localeCompare(b.name));
         if (deptEmps.length === 0) return;
 
-        // Строка группы отдела
         let groupHeader = Array(35).fill("");
         groupHeader[0] = `ОТДЕЛ: ${dept.toUpperCase()}`;
         matrix.push(groupHeader);
 
-        // Горизонтальная шапка дней
         let subHeader = Array(35).fill("");
         subHeader[0] = "Сотрудник";
         subHeader[1] = "Должность";
@@ -210,7 +211,6 @@ function exportToExcel() {
         subHeader[33] = "ИТОГО";
         matrix.push(subHeader);
 
-        // Строки сотрудников
         deptEmps.forEach(emp => {
             let row = Array(34).fill("");
             row[0] = emp.name;
@@ -230,7 +230,6 @@ function exportToExcel() {
             matrix.push(row);
         });
 
-        // Строка итогов по отделу
         let totalRow = Array(34).fill("");
         totalRow[0] = "ИТОГО";
         let deptTotalHours = filteredRecords.filter(r => r.dept === dept).reduce((sum, r) => sum + r.hours, 0);
@@ -240,15 +239,13 @@ function exportToExcel() {
         matrix.push(Array(34).fill("")); 
     });
 
-    // Переводим массив в лист Excel
     const worksheet = XLSX.utils.aoa_to_sheet(matrix);
 
-    // Установка фиксированной ширины колонок для красивой сетки
+    // Размеры колонок
     worksheet['!cols'] = [{ wch: 22 }, { wch: 12 }]; 
     for (let i = 1; i <= 31; i++) { worksheet['!cols'].push({ wch: 5.5 }); } 
     worksheet['!cols'].push({ wch: 12 }); 
 
-    // Описание стиля черных тонких границ (клеточек)
     const cellBorder = {
         top: { style: "thin", color: { rgb: "000000" } },
         bottom: { style: "thin", color: { rgb: "000000" } },
@@ -256,14 +253,13 @@ function exportToExcel() {
         right: { style: "thin", color: { rgb: "000000" } }
     };
 
-    // 2. Стилизация ячеек через библиотеку xlsx-js-style
+    // Применение стилей и прорисовка клеточек
     for (let cellRef in worksheet) {
-        if (cellRef[0] === '!') continue; // Игнорируем служебные ключи
+        if (cellRef[0] === '!') continue;
         
         const cell = worksheet[cellRef];
         const rowIndex = parseInt(cellRef.replace(/[A-Z]/g, ''));
         
-        // Все ячейки таблицы, начиная со строк данных, получают границы
         if (rowIndex >= 3) {
             cell.s = {
                 border: cellBorder,
@@ -272,22 +268,21 @@ function exportToExcel() {
             };
         }
 
-        // Выравнивание текста по левому краю для имен
         if (cellRef.startsWith('A') && rowIndex >= 3) {
             cell.s.alignment.horizontal = "left"; 
         }
 
-        // ПО ОБРАЗЦУ ПОЛЬЗОВАТЕЛЯ: Красим шапку с днями в ЗЕЛЕНЫЙ цвет с белым жирным шрифтом
+        // Перекраска шапки дней в ЗЕЛЕНЫЙ
         if (matrix[rowIndex - 1] && (matrix[rowIndex - 1][0] === "Сотрудник" || matrix[rowIndex - 1][2] === 1)) {
             cell.s = {
-                fill: { fgColor: { rgb: "107C41" } }, // Фирменный зеленый Excel
-                font: { name: "Arial", size: 11, bold: true, color: { rgb: "FFFFFF" } }, // Белый жирный текст
+                fill: { fgColor: { rgb: "107C41" } }, 
+                font: { name: "Arial", size: 11, bold: true, color: { rgb: "FFFFFF" } }, 
                 alignment: { vertical: "center", horizontal: "center" },
                 border: cellBorder
-            };
+                };
         }
 
-        // Строка ИТОГО снизу групп выделяется серым фоном и жирным шрифтом
+        // Строка ИТОГО (Серая заливка)
         if (matrix[rowIndex - 1] && matrix[rowIndex - 1][0] === "ИТОГО") {
             cell.s.font = { name: "Arial", size: 10, bold: true };
             cell.s.fill = { fgColor: { rgb: "E1E1E1" } }; 
@@ -295,7 +290,7 @@ function exportToExcel() {
         }
     }
 
-    // Сохранение и автоматическое скачивание файла браузером
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Табель");
-    XLSX.writeFile(workbook, `Табель_Crispy_${targetMonth}_${targetYear}.xlsx`);
+    // ИСПРАВЛЕНО: Теперь добавляем и сохраняем используя правильную переменную wb
+    XLSX.utils.book_append_sheet(wb, worksheet, "Табель");
+    XLSX.writeFile(wb, `Табель_Crispy_${targetMonth}_${targetYear}.xlsx`);
 }
