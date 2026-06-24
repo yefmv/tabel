@@ -16,11 +16,12 @@ let employees = JSON.parse(localStorage.getItem('gh_employees_v2')) || [
     { name: 'Таня В', dept: 'бар' }
 ];
 
-// Установка сегодняшней даты по умолчанию при загрузке страницы
+// ID редактируемой записи (null, если создаем новую)
+let editingId = null;
+
 document.getElementById('shiftDate').valueAsDate = new Date();
 refreshAll();
 
-// Полное обновление интерфейса
 function refreshAll() {
     updateEmployeeSelect();
     renderEmployeeList();
@@ -117,24 +118,40 @@ function addRecord() {
     let arrMinutes = arrH * 60 + arrM;
     let depMinutes = depH * 60 + depM;
 
-    // Расчет ночных смен (переход через полночь)
     if (depMinutes < arrMinutes) { depMinutes += 24 * 60; }
     
-    // Чистая разница в часах
     let rawHours = (depMinutes - arrMinutes) / 60;
     
-    // ЛОГИКА ОКРУГЛЕНИЯ: По полчаса строго в меньшую сторону
+    // ОКРУГЛЕНИЕ ПО ПОЛЧАСА В МЕНЬШУЮ СТОРОНУ
     let totalHours = Math.floor(rawHours * 2) / 2;
 
     const empData = employees.find(e => e.name === name);
     const dept = empData ? empData.dept : 'кухня';
 
-    records.push({
-        id: Date.now(),
-        year, month, day,
-        dateStr: dateInput.split('-').reverse().join('.'),
-        name, dept, hours: totalHours, arrival, departure
-    });
+    if (editingId !== null) {
+        // РЕЖИМ РЕДАКТИРОВАНИЯ: Находим старую запись и обновляем её поля
+        const recordIndex = records.findIndex(r => r.id === editingId);
+        if (recordIndex > -1) {
+            records[recordIndex].year = year;
+            records[recordIndex].month = month;
+            records[recordIndex].day = day;
+            records[recordIndex].dateStr = dateInput.split('-').reverse().join('.');
+            records[recordIndex].name = name;
+            records[recordIndex].dept = dept;
+            records[recordIndex].hours = totalHours;
+            records[recordIndex].arrival = arrival;
+            records[recordIndex].departure = departure;
+        }
+        cancelEdit(); // Сбрасываем флаги и восстанавливаем интерфейс кнопки
+    } else {
+        // ОБЫЧНЫЙ РЕЖИМ: Создаем новую смену
+        records.push({
+            id: Date.now(),
+            year, month, day,
+            dateStr: dateInput.split('-').reverse().join('.'),
+            name, dept, hours: totalHours, arrival, departure
+        });
+    }
 
     localStorage.setItem('gh_records_v2', JSON.stringify(records));
     updatePreview();
@@ -143,7 +160,50 @@ function addRecord() {
     document.getElementById('depTime').value = '';
 }
 
+// Запуск процесса изменения смены
+function startEdit(id) {
+    const record = records.find(r => r.id === id);
+    if (!record) return;
+
+    editingId = id;
+
+    // Переводим дату из DD.MM.YYYY обратно в YYYY-MM-DD для инпута
+    const parts = record.dateStr.split('.');
+    if (parts.length === 3) {
+        // Если сохранен год, используем его, иначе текущий сохраненный в объекте
+        const y = record.year || parts[2];
+        document.getElementById('shiftDate').value = `${y}-${parts[1]}-${parts[0]}`;
+    }
+
+    document.getElementById('empSelect').value = record.name;
+    document.getElementById('arrTime').value = record.arrival;
+    document.getElementById('depTime').value = record.departure;
+
+    // Визуальное изменение заголовков и кнопок формы
+    document.getElementById('formTitle').textContent = "Редактировать смену";
+    document.getElementById('submitBtn').textContent = "Обновить смену";
+    document.getElementById('submitBtn').className = "btn-success";
+    document.getElementById('cancelEditBtn').style.display = "block";
+    
+    // Плавный скролл наверх к форме
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Отмена редактирования
+function cancelEdit() {
+    editingId = null;
+    document.getElementById('formTitle').textContent = "Добавить смену";
+    document.getElementById('submitBtn').textContent = "Сохранить смену";
+    document.getElementById('submitBtn').className = "btn-primary";
+    document.getElementById('cancelEditBtn').style.display = "none";
+    document.getElementById('shiftDate').valueAsDate = new Date();
+    document.getElementById('empSelect').value = "";
+    document.getElementById('arrTime').value = "";
+    document.getElementById('depTime').value = "";
+}
+
 function deleteRecord(id) {
+    if (editingId === id) cancelEdit();
     records = records.filter(r => r.id !== id);
     localStorage.setItem('gh_records_v2', JSON.stringify(records));
     updatePreview();
@@ -163,7 +223,10 @@ function updatePreview() {
                 <small style="color:#666;">${r.dateStr}</small> <b>${r.name}</b>:<br>${r.arrival} – ${r.departure} 
                 <strong style="color:#107C41;">(${r.hours} ч.)</strong>
             </div>
-            <button class="btn-delete" onclick="deleteRecord(${r.id})">✕</button>
+            <div class="record-actions">
+                <button class="btn-edit" onclick="startEdit(${r.id})">✏️</button>
+                <button class="btn-delete" onclick="deleteRecord(${r.id})">✕</button>
+            </div>
         </div>
     `).join('');
 }
@@ -187,12 +250,9 @@ function exportToExcel() {
     const activeEmployees = employees.filter(e => uniqueEmpNames.includes(e.name));
 
     const depts = ['кухня', 'бар'];
-    
-    // Создаем книгу Excel (здесь переменная называется wb)
     const wb = XLSX.utils.book_new();
     let matrix = [];
 
-    // Заголовки документа
     matrix.push([`ТАБЕЛЬ УЧЕТА РАБОЧЕГО ВРЕМЕНИ — CRISPY PIZZA (${currentMonthLabel.toUpperCase()})`]);
     matrix.push([]); 
 
@@ -241,7 +301,6 @@ function exportToExcel() {
 
     const worksheet = XLSX.utils.aoa_to_sheet(matrix);
 
-    // Размеры колонок
     worksheet['!cols'] = [{ wch: 22 }, { wch: 12 }]; 
     for (let i = 1; i <= 31; i++) { worksheet['!cols'].push({ wch: 5.5 }); } 
     worksheet['!cols'].push({ wch: 12 }); 
@@ -253,7 +312,6 @@ function exportToExcel() {
         right: { style: "thin", color: { rgb: "000000" } }
     };
 
-    // Применение стилей и прорисовка клеточек
     for (let cellRef in worksheet) {
         if (cellRef[0] === '!') continue;
         
@@ -272,17 +330,15 @@ function exportToExcel() {
             cell.s.alignment.horizontal = "left"; 
         }
 
-        // Перекраска шапки дней в ЗЕЛЕНЫЙ
         if (matrix[rowIndex - 1] && (matrix[rowIndex - 1][0] === "Сотрудник" || matrix[rowIndex - 1][2] === 1)) {
             cell.s = {
                 fill: { fgColor: { rgb: "107C41" } }, 
                 font: { name: "Arial", size: 11, bold: true, color: { rgb: "FFFFFF" } }, 
                 alignment: { vertical: "center", horizontal: "center" },
                 border: cellBorder
-                };
+            };
         }
 
-        // Строка ИТОГО (Серая заливка)
         if (matrix[rowIndex - 1] && matrix[rowIndex - 1][0] === "ИТОГО") {
             cell.s.font = { name: "Arial", size: 10, bold: true };
             cell.s.fill = { fgColor: { rgb: "E1E1E1" } }; 
@@ -290,7 +346,6 @@ function exportToExcel() {
         }
     }
 
-    // ИСПРАВЛЕНО: Теперь добавляем и сохраняем используя правильную переменную wb
     XLSX.utils.book_append_sheet(wb, worksheet, "Табель");
     XLSX.writeFile(wb, `Табель_Crispy_${targetMonth}_${targetYear}.xlsx`);
 }
