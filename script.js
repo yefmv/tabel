@@ -1,5 +1,5 @@
-let records = JSON.parse(localStorage.getItem('gh_records_v1')) || [];
-let employees = JSON.parse(localStorage.getItem('gh_employees_v1')) || [
+let records = JSON.parse(localStorage.getItem('gh_records_v2')) || [];
+let employees = JSON.parse(localStorage.getItem('gh_employees_v2')) || [
     { name: 'Наргиза', dept: 'кухня' },
     { name: 'Мавлуда', dept: 'кухня' },
     { name: 'Сардор', dept: 'кухня' },
@@ -12,10 +12,7 @@ let employees = JSON.parse(localStorage.getItem('gh_employees_v1')) || [
     { name: 'Таня В', dept: 'бар' }
 ];
 
-// Автоматическая дата при старте
 document.getElementById('shiftDate').valueAsDate = new Date();
-
-// Инициализация интерфейса
 refreshAll();
 
 function refreshAll() {
@@ -26,13 +23,13 @@ function refreshAll() {
 
 function updateEmployeeSelect() {
     const select = document.getElementById('empSelect');
-    select.innerHTML = '<option value="">-- Выберите из списка --</option>';
+    select.innerHTML = '<option value="">-- Нажмите для выбора --</option>';
     const sorted = [...employees].sort((a, b) => a.dept.localeCompare(b.dept) || a.name.localeCompare(b.name));
     
     sorted.forEach(emp => {
         const opt = document.createElement('option');
         opt.value = emp.name;
-        opt.textContent = `${emp.name} (${emp.dept.toUpperCase()})`;
+        opt.textContent = `${emp.name} [${emp.dept.toUpperCase()}]`;
         select.appendChild(opt);
     });
 }
@@ -40,16 +37,17 @@ function updateEmployeeSelect() {
 function renderEmployeeList() {
     const listDiv = document.getElementById('empList');
     if (employees.length === 0) {
-        listDiv.innerHTML = '<div style="padding:15px; color:#aaa; text-align:center;">База сотрудников пуста</div>';
+        listDiv.innerHTML = '<div style="padding:15px; color:#aaa; text-align:center;">База пуста</div>';
         return;
     }
     const sorted = [...employees].sort((a, b) => a.dept.localeCompare(b.dept) || a.name.localeCompare(b.name));
     
     listDiv.innerHTML = sorted.map(emp => {
         const realIdx = employees.findIndex(e => e.name === emp.name);
+        const badgeClass = emp.dept === 'кухня' ? 'kitchen' : 'bar';
         return `
             <div class="emp-row">
-                <span><b>${emp.name}</b> <small style="color:#666;">(${emp.dept})</small></span>
+                <span><b>${emp.name}</b><span class="badge ${badgeClass}">${emp.dept}</span></span>
                 <button class="btn-delete" onclick="deleteEmployee(${realIdx})">✕</button>
             </div>
         `;
@@ -63,19 +61,19 @@ function addEmployee() {
     const dept = deptRadio ? deptRadio.value : 'кухня';
 
     if (!name) { alert('Введите имя сотрудника!'); return; }
-    if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { alert('Этот сотрудник уже есть в базе!'); return; }
+    if (employees.some(e => e.name.toLowerCase() === name.toLowerCase())) { alert('Этот сотрудник уже есть!'); return; }
 
     employees.push({ name, dept });
-    localStorage.setItem('gh_employees_v1', JSON.stringify(employees));
+    localStorage.setItem('gh_employees_v2', JSON.stringify(employees));
     input.value = '';
     refreshAll();
 }
 
 function deleteEmployee(idx) {
     if (idx > -1 && idx < employees.length) {
-        if (confirm(`Удалить сотрудника ${employees[idx].name} из базы?`)) {
+        if (confirm(`Удалить сотрудника ${employees[idx].name}?`)) {
             employees.splice(idx, 1);
-            localStorage.setItem('gh_employees_v1', JSON.stringify(employees));
+            localStorage.setItem('gh_employees_v2', JSON.stringify(employees));
             refreshAll();
         }
     }
@@ -116,7 +114,7 @@ function addRecord() {
         name, dept, hours: totalHours, arrival, departure
     });
 
-    localStorage.setItem('gh_records_v1', JSON.stringify(records));
+    localStorage.setItem('gh_records_v2', JSON.stringify(records));
     updatePreview();
 
     document.getElementById('arrTime').value = '';
@@ -125,7 +123,7 @@ function addRecord() {
 
 function deleteRecord(id) {
     records = records.filter(r => r.id !== id);
-    localStorage.setItem('gh_records_v1', JSON.stringify(records));
+    localStorage.setItem('gh_records_v2', JSON.stringify(records));
     updatePreview();
 }
 
@@ -137,10 +135,10 @@ function updatePreview() {
     }
     const sorted = [...records].reverse();
     area.innerHTML = sorted.map(r => `
-        <div class="record-item">
+        <div class="record-item dept-${r.dept}">
             <div>
-                <small style="color:#666;">${r.dateStr}</small> <b>${r.name}</b> <small>(${r.dept})</small>:<br>${r.arrival}-${r.departure} 
-                <strong style="color:#2A4D69;">(${r.hours} ч.)</strong>
+                <small style="color:#666;">${r.dateStr}</small> <b>${r.name}</b>:<br>${r.arrival}-${r.departure} 
+                <strong style="color:#ff416c;">(${r.hours} ч.)</strong>
             </div>
             <button class="btn-delete" onclick="deleteRecord(${r.id})">✕</button>
         </div>
